@@ -12,8 +12,8 @@ class PDF(SQLAlchemyBase):
     filename = Column(String(255), nullable=False)
     filepath = Column(String(1024), nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
-    title = Column(String(255), nullable=True)
-    summary = Column(Text, nullable=True)
+    title = Column(String(255), nullable=True) # to be deleted and add file status, size, and if it is deleted locally or not
+    summary = Column(Text, nullable=True) 
 
     user = relationship("User", back_populates="pdfs")
     chats = relationship("Chat", back_populates="pdf", cascade="all, delete-orphan")

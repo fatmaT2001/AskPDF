@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from src.config import get_db_client , RedisClient
 from src.models import db_schemes  
 from src.config.database import SQLAlchemyBase, db_engine
+from src.routes import user_router, pdf_router
 
 async def create_database_tables():
     async with db_engine.begin() as conn:
@@ -16,10 +17,8 @@ async def lifespan(app: FastAPI):
 
     try:
         await create_database_tables()
-        app.state.db_client = get_db_client()
     except Exception as e:
         print(f"Error creating database tables: {e}")
-
 
     # Initialize Redis client
     try:
@@ -44,3 +43,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+app.include_router(user_router)
+app.include_router(pdf_router)
