@@ -3,6 +3,8 @@ services:
     image: redis:7
     container_name: redis
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    env_file:
+          - ./backend/.env
     ports:
       - "6379:6379"
     volumes:
@@ -28,6 +30,24 @@ services:
     networks:
       - servemate
 
+  litellm:
+      image: ghcr.io/berriai/litellm:main-v1.78.2-nightly
+      container_name: litellm
+      ports:
+        - "4000:4000"
+      env_file:
+          - ./backend/.env
+      environment:
+        - GROQ_API_KEY=${GROQ_API_KEY}
+        - OPENROUTER_API_KEY=${OPEN_ROUTER_API_KEY}
+      volumes:
+        - ./litellm_config.yaml:/app/litellm_config.yaml:ro
+      command: ["--host", "0.0.0.0", "--port", "4000", "--config", "/app/litellm_config.yaml"]
+      restart: unless-stopped
+      networks:
+        - servemate
+
+      
 networks:
   servemate:
 
