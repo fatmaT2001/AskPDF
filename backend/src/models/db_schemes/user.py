@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import func
-class USER(SQLAlchemyBase):
+class User(SQLAlchemyBase):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
