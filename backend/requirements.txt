@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+sqlalchemy
+asyncpg==0.30.0
+psycopg2==2.9.10
+requests
+pinecone[asyncio]
+python-dotenv
+litellm[proxy]==1.77.1
+openai
+redis[hiredis]
