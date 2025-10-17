@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from src.config import get_db_client , RedisClient
 from src.models import db_schemes  
 from src.config.database import SQLAlchemyBase, db_engine
-from src.routes import user_router, pdf_router
+from src.routes import user_router, pdf_router, chat_router
 
 async def create_database_tables():
     async with db_engine.begin() as conn:
@@ -46,3 +46,4 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(pdf_router)
+app.include_router(chat_router)
