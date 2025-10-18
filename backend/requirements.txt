@@ -10,3 +10,7 @@ python-dotenv
 litellm[proxy]==1.77.1
 openai
 redis[hiredis]
+aiofiles==25.1.0
+langchain-community 
+pypdf
+

@@ -3,6 +3,7 @@ from src.models.db_models import PDFModel, UserModel
 from src.models.db_schemes import PDF
 from fastapi import UploadFile, File, HTTPException
 from typing import List
+from src.controllers import FileController
 import os
 router = APIRouter(
     tags=["pdfs"],
@@ -10,8 +11,11 @@ router = APIRouter(
 
 @router.post("/users/{user_id}/pdfs")
 async def create_user_pdf(user_id: int, pdf: UploadFile = File(...)):
+    
     pdf_model = PDFModel()
     user_model = UserModel()
+    file_controller = FileController()
+
     try:
         user = await user_model.get_user_by_id(user_id)
         if user is None:
@@ -21,11 +25,17 @@ async def create_user_pdf(user_id: int, pdf: UploadFile = File(...)):
 
     #save the file locally
     try:
-        base_dir = os.path.dirname(__file__)         
-        assets_dir = os.path.join(base_dir, "..", "assets")  
-        file_location = os.path.join(assets_dir, pdf.filename)
-        with open(file_location, "wb+") as file_object:
-            file_object.write(pdf.file.read())
+        file_location = await file_controller.save_file_locally(pdf.filename, pdf)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # get pdf chunks to verify it's a valid pdf
+    try:
+        chunks = await file_controller.get_pdf_chunks(file_location)
+        print(f"Extracted {len(chunks)} chunks from the uploaded PDF.")
+        print(chunks[:2])  # Print first 2 chunks for debugging
+        if not chunks:
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF or is empty")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
