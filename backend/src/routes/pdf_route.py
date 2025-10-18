@@ -5,17 +5,19 @@ from fastapi import UploadFile, File, HTTPException
 from typing import List
 from src.controllers import FileController
 import os
+from fastapi import Request
+from src.stores.vectordb.vectordb_interface import VectorDBInterface
+
 router = APIRouter(
     tags=["pdfs"],
 )
 
 @router.post("/users/{user_id}/pdfs")
-async def create_user_pdf(user_id: int, pdf: UploadFile = File(...)):
-    
+async def create_user_pdf(request: Request, user_id: int, pdf: UploadFile = File(...)):
     pdf_model = PDFModel()
     user_model = UserModel()
-    file_controller = FileController()
-
+    vectordb_instance = request.app.state.vector_db_client
+    file_controller = FileController(vectordb_instance=vectordb_instance)
     try:
         user = await user_model.get_user_by_id(user_id)
         if user is None:
@@ -33,12 +35,16 @@ async def create_user_pdf(user_id: int, pdf: UploadFile = File(...)):
     try:
         chunks = await file_controller.get_pdf_chunks(file_location)
         print(f"Extracted {len(chunks)} chunks from the uploaded PDF.")
-        print(chunks[:2])  # Print first 2 chunks for debugging
         if not chunks:
             raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF or is empty")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+    # index the pdf chunks into the vector DB
+    try:
+        await file_controller.vector_db_index(pdf_id=pdf.filename, chunks=chunks)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     # save the pdf record in the database
     try:
         pdf_object = PDF(user_id=user_id, filename=pdf.filename, filepath=file_location)
@@ -70,9 +76,10 @@ async def get_user_pdf(user_id: int, pdf_id: int):
 
 
 @router.delete("/users/{user_id}/pdfs/{pdf_id}")
-async def delete_user_pdf(user_id: int, pdf_id: int):
+async def delete_user_pdf(request: Request, user_id: int, pdf_id: int):
     pdf_model = PDFModel()
     user_model = UserModel()
+    vectordb_instance: VectorDBInterface = request.app.state.vector_db_client
     try:
         user = await user_model.get_user_by_id(user_id)
         if user is None:
@@ -95,6 +102,11 @@ async def delete_user_pdf(user_id: int, pdf_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+    # delete from vector database
+    try:
+        await vectordb_instance.delete(pdf_id=pdf_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
     return {"detail": "PDF deleted successfully"}
-
 
